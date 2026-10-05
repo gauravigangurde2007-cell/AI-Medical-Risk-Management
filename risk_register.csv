@@ -1,0 +1,9 @@
+Risk,Category,Likelihood,Impact,Initial Risk Score,Severity
+Incorrect AI prediction,Healthcare,5,5,25,Critical
+Patient data privacy breach,Technical / Ethical,5,5,25,Critical
+Bias in training data,Ethical,4,5,20,Critical
+Lack of explainability,Ethical,3,4,12,High
+Model hallucination / unsupported output,Technical,4,5,20,Critical
+Unauthorized access,Technical,4,5,20,Critical
+System downtime,Technical,3,3,9,Medium
+Wrong treatment recommendation,Healthcare,5,5,25,Critical
