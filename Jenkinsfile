@@ -8,43 +8,60 @@ pipeline {
 
     environment {
         IMAGE_NAME = 'ai-medical-risk-management'
+        CONTAINER_NAME = 'ai-medical-risk-management-app'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo 'Source code checked out by Jenkins from GitHub.'
+                echo 'Source code checked out from GitHub.'
             }
         }
 
         stage('Validate Project') {
             steps {
                 sh '''
+                    set -e
                     test -f app.py
                     test -f requirements.txt
-                    python -m py_compile app.py
-                    echo "Project files and Python syntax validated."
+                    docker run --rm \
+                        -v "$WORKSPACE:/app" \
+                        -w /app \
+                        python:3.12-slim \
+                        python -m py_compile app.py
                 '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .'
+                sh '''
+                    set -e
+                    docker build -t ${IMAGE_NAME}:latest .
+                '''
             }
         }
 
         stage('Deploy Application') {
             steps {
                 sh '''
-                    docker stop ai-medical-risk-management-cicd || true
-                    docker rm ai-medical-risk-management-cicd || true
-
+                    set -e
+                    docker rm -f ${CONTAINER_NAME} || true
                     docker run -d \
-                      --name ai-medical-risk-management-cicd \
-                      --restart unless-stopped \
-                      -p 8502:8501 \
-                      ${IMAGE_NAME}:${BUILD_NUMBER}
+                        --name ${CONTAINER_NAME} \
+                        --restart unless-stopped \
+                        -p 8501:8501 \
+                        ${IMAGE_NAME}:latest
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    sleep 10
+                    docker ps --filter "name=${CONTAINER_NAME}"
+                    docker logs --tail 30 ${CONTAINER_NAME}
                 '''
             }
         }
@@ -53,10 +70,10 @@ pipeline {
     post {
         success {
             echo 'CI/CD pipeline completed successfully.'
-            echo 'Application URL: http://localhost:8502'
+            echo 'Open the application at http://localhost:8501'
         }
         failure {
-            echo 'Pipeline failed. Check the Jenkins Console Output.'
+            echo 'Pipeline failed. Check Console Output for the failing stage.'
         }
     }
 }
